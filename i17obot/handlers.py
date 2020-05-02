@@ -10,7 +10,7 @@ import config
 import messages
 from telegram import bot
 from transifex import random_string, transifex_string_url
-from database import get_all_users, toggle_reminder, update_user
+from database import get_all_users, get_user, toggle_reminder, update_user
 from utils import docsurl
 
 
@@ -50,7 +50,7 @@ async def set_language(query: types.CallbackQuery):
     # TODO: Find a better way to translate the messages the bot sends
     if query.data == "es":
         template = "Idioma elegido: *{}*.\nUtilice el comando /language para cambiarlo."
-    elif query.data == "pt_br":
+    elif query.data == "pt_BR":
         template = "Idioma escolhido: *{}*.\nUse o comando /language para mudar."
 
     await bot.edit_message_text(
@@ -76,8 +76,11 @@ async def reminder(message: types.Message):
 
 
 async def translate_at_transifex(message: types.Message):
-    resource, string = await random_string(translated=False, max_size=300)
-    string_url = transifex_string_url(resource, string["key"])
+    user = await get_user(message.from_user.id)
+    language = user.get("language_code") or config.DEFAULT_LANGUAGE
+
+    resource, string = await random_string(language, translated=False, max_size=300)
+    string_url = transifex_string_url(resource, string["key"], language)
 
     response = messages.translate_at_transifex.format(
         source=string["source_string"],
